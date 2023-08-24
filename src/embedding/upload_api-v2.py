@@ -131,6 +131,7 @@ deepeye.count = 1
 CLUSTER_WORKERONLY = os.getenv('CLUSTER_WORKERONLY', False)
 
 HAS_OPENCL = os.getenv('HAS_OPENCL', 'true')
+EXTRACT_EMBEDDING_WITH_SERVER = os.getenv('EXTRACT_EMBEDDING_WITH_SERVER', 'true')
 SAVE_ORIGINAL_FACE = False
 original_face_img_path = os.path.join(BASEDIR, 'data', 'original_face_img')
 if not os.path.exists(original_face_img_path):
@@ -355,7 +356,9 @@ def syncAutogroupDatasetFunc():
     group_id = get_current_groupid()
 
     #host="http://localhost:3000/restapi/datasync/token/" + str(group_id)
-    host = "http://workaihost.tiegushi.com/restapi/datasync/token/" + str(group_id)
+    API_SERVER_ADDRESS = os.getenv('API_SERVER_ADDRESS','workaihost.tiegushi.com')
+    API_SERVER_PORT = os.getenv('API_SERVER_PORT','80')
+    host = 'http://'+API_SERVER_ADDRESS+':'+API_SERVER_PORT+'/restapi/datasync/token/' + str(group_id)
     result = None
     try:
         response = urlopen(host, timeout=10)
@@ -573,7 +576,10 @@ def disposeFinalSyncDatasetsThreadFunc(device_id, toid):
     try:
         group_id = get_current_groupid()
         #host="http://localhost:3000/restapi/datasync/token/" + str(group_id)
-        host = "http://workaihost.tiegushi.com/restapi/datasync/token/" + str(group_id)
+        API_SERVER_ADDRESS = os.getenv('API_SERVER_ADDRESS','workaihost.tiegushi.com')
+        API_SERVER_PORT = os.getenv('API_SERVER_PORT','80')
+        host = 'http://'+API_SERVER_ADDRESS+':'+API_SERVER_PORT+'/restapi/datasync/token/' + str(group_id)
+
         result = None
         try:
             response = urlopen(host, timeout=10)
@@ -714,7 +720,10 @@ def disposeSyncStatusInfoThreadFunc(device_id, toid):
     try:
         group_id = get_current_groupid()
         #host="http://localhost:3000/restapi/datasync/token/" + str(group_id)
-        host = "http://workaihost.tiegushi.com/restapi/datasync/token/" + str(group_id)
+        API_SERVER_ADDRESS = os.getenv('API_SERVER_ADDRESS','workaihost.tiegushi.com')
+        API_SERVER_PORT = os.getenv('API_SERVER_PORT','80')
+        host = 'http://'+API_SERVER_ADDRESS+':'+API_SERVER_PORT+'/restapi/datasync/token/' + str(group_id)
+
         result = None
         try:
             response = urlopen(host, timeout=10)
@@ -1290,7 +1299,7 @@ def _updateDataSet(url, objId, group_id, device_id, drop, img_type, sqlId, style
                     OBJ_COUNT += 1
 
                     # 这里需要把老图从本地目录删除掉
-                    old_img_path = infile.replace(str(new_train_set.id)+'.jpg', str(old_train_set.id)+'.jpg')
+                    old_img_path = infile.replace(str(new_train_set.id)+'.png', str(old_train_set.id)+'.png')
                     os.remove(old_img_path)
                 elif SVM_CLASSIFIER_ENABLED is True:
                     img_path = save_embedding.download_img_for_svm(url, group_id, face_id, style=style)
@@ -1314,7 +1323,7 @@ def _updateDataSet(url, objId, group_id, device_id, drop, img_type, sqlId, style
                         print('update: {} style face count, url={}'.format(FACE_COUNT[style], url))
 
                         # 这里需要把老图从本地目录删除掉
-                        old_img_path = img_path.replace(str(new_train_set.id) + '.jpg', str(old_train_set.id) + '.jpg')
+                        old_img_path = img_path.replace(str(new_train_set.id) + '.png', str(old_train_set.id) + '.png')
                         os.remove(old_img_path)
                 else:
                     print('face')
@@ -1329,7 +1338,7 @@ def _updateDataSet(url, objId, group_id, device_id, drop, img_type, sqlId, style
                     print('{} style face count'.format((FACE_COUNT[style])))
 
                     # 这里需要把老图从本地目录删除掉
-                    old_img_path = img_path.replace(str(new_train_set.id) + '.jpg', str(old_train_set.id) + '.jpg')
+                    old_img_path = img_path.replace(str(new_train_set.id) + '.png', str(old_train_set.id) + '.png')
                     os.remove(old_img_path)
 
             else:
@@ -1681,7 +1690,7 @@ def extract_v2(image):
 
     if current_groupid is None:
         return json.dumps({"embedding_path":"","error":"please join group"})
-    if HAS_OPENCL == 'false':
+    if HAS_OPENCL == 'false' and EXTRACT_EMBEDDING_WITH_SERVER == 'true':
         embedding = get_remote_embedding(imgstring)
     else:
         embedding = FaceProcessing.FaceProcessingBase64ImageData2(imgstring)
